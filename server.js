@@ -9,7 +9,7 @@ const playerLeaderboardRoute = require('./routes/player-leaderboard');
 
 const app = express();
 
-const PORT = 3300;
+const PORT = 5432;
 app.use(cors());
 app.use(express.json())
 
