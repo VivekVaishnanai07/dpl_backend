@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const fetch = require('node-fetch');
+const axios = require('axios');
 
 const userRoutes = require('./routes/userRoutes');
 const teamRoutes = require('./routes/teamRoutes');
@@ -22,15 +22,18 @@ app.use("/api/prediction", predictionRoutes);
 app.use("/api/status", statusRoute);
 app.use("/api/player-leaderboard", playerLeaderboardRoute);
 
-app.get('/api/ip', async (req, res) => {
-  try {
-    const response = await fetch('https://worldtimeapi.org/api/ip');
-    const data = await response.json();
-    res.json(data);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
+app.get('/api/ip', (req, res) => {
+  axios.get('https://worldtimeapi.org/api/ip')
+    .then(response => {
+      const result = response.data;
+      if (result) {
+        res.send(result);
+      }
+    })
+    .catch(error => {
+      console.error(error);
+      res.status(500).send('Internal Server Error');
+    });
 });
 
 app.listen(PORT, () => {
