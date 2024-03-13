@@ -52,6 +52,81 @@ router.get("/", (req, res) => {
         });
 });
 
+// dashboard match list
+router.get("/", (req, res) => {
+    db.query(`SELECT 
+        m.id,
+        team_1.full_name AS team_1,
+        team_1.icon AS team_1_icon,
+        team_2.full_name AS team_2,
+        team_2.icon AS team_2_icon,
+        m.venue,
+        DATE_FORMAT(m.date, '%e %b, %Y %l:%i %p') AS formatted_date,
+        m.match_no,
+        m.season_year,
+        team_3.full_name AS winner_team,
+        IF(
+            DATEDIFF(m.date, CURRENT_DATE) = 0, 
+            TIME_FORMAT(TIMEDIFF(m.date, CURRENT_TIMESTAMP), '%H:%i'), 
+            CONCAT(DATEDIFF(m.date, CURRENT_DATE), ' days')
+        ) AS countdownTime
+    FROM 
+        matches m  
+    INNER JOIN 
+        teams team_1 ON team_1.id = m.team_1 
+    INNER JOIN 
+        teams team_2 ON team_2.id = m.team_2 
+    LEFT JOIN 
+        teams team_3 ON team_3.id = m.winner_team
+    ORDER BY 
+        m.date ASC`, (err, result) => {
+            if (err) {
+                console.error(err);
+                res.status(500).send("An error occurred while fetching data from the database.");
+                return;
+            }
+
+            // Format the result here before sending the response
+            const upcomingMatches = [];
+            const previousMatches = [];
+            const liveMatches = [];
+
+            result.forEach(item => {
+                const match = {
+                    id: item.id,
+                    team_1: item.team_1,
+                    team_1_icon: item.team_1_icon,
+                    team_2: item.team_2,
+                    team_2_icon: item.team_2_icon,
+                    venue: item.venue,
+                    date: item.formatted_date,
+                    match_no: item.match_no,
+                    season_year: item.season_year,
+                    winner_team: item.winner_team,
+                    countdownTime: item.countdownTime
+                };
+
+                const matchDate = new Date(item.date);
+                const today = new Date();
+                if (matchDate > today) {
+                    upcomingMatches.push(match);
+                } else if (matchDate.toDateString() === today.toDateString()) {
+                    liveMatches.push(match);
+                } else {
+                    previousMatches.push(match);
+                }
+            });
+
+            const response = {
+                upcomingMatches: upcomingMatches.slice(0, 3),
+                previousMatches: previousMatches.slice(-3),
+                liveMatches: liveMatches.slice(0, 3)
+            };
+
+            res.send(response);
+        });
+});
+
 
 //  get one matches
 router.get("/prediction/:id", (req, res) => {
