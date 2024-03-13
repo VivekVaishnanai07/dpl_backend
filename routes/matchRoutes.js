@@ -53,7 +53,7 @@ router.get("/", (req, res) => {
 });
 
 // dashboard matches list
-router.get("/dashboard", (req, res) => {
+router.get("/dashboard/:id", (req, res) => {
   const userId = req.params.userId;
   db.query(`SELECT 
               m.id AS match_id,
