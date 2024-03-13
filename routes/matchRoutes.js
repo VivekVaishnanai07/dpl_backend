@@ -41,11 +41,11 @@ router.get("/", (req, res) => {
       team_2: item.team_2,
       team_2_icon: item.team_2_icon,
       venue: item.venue,
-      date: item.formatted_date, // Use formatted date
+      date: item.formatted_date,
       match_no: item.match_no,
       season_year: item.season_year,
       winner_team: item.winner_team,
-      countdownTime: item.countdownTime // This field is already formatted
+      countdownTime: item.countdownTime
     }));
 
     res.send(formattedResult);
@@ -55,54 +55,65 @@ router.get("/", (req, res) => {
 // dashboard matches list
 router.get("/dashboard/:id", (req, res) => {
   const id = req.params.id;
-  const query = `
-    SELECT 
-      m.id AS match_id, 
-      m.team_1, 
-      team_1.full_name AS team_1_name, 
-      t1.icon AS team_1_icon, 
-      m.team_2, 
-      team_2.full_name AS team_2_name, 
-      t2.icon AS team_2_icon, 
-      m.venue, 
-      m.date, 
-      m.match_no, 
-      m.season_year, 
-      team_3.full_name AS winner_team, 
-      IF(DATEDIFF(m.date, CURRENT_DATE) = 0, 
-          TIME_FORMAT(TIMEDIFF(m.date, CURRENT_TIMESTAMP), '%H:%i'), 
-          CONCAT(DATEDIFF(m.date, CURRENT_DATE))) AS countdownTime, 
-      pt.full_name AS predicted_team_name 
-    FROM 
-      matches m 
-    LEFT JOIN  
-      prediction p ON m.id = p.match_id AND p.user_id = ${id}
-    LEFT JOIN  
-      teams team_1 ON m.team_1 = team_1.id 
-    LEFT JOIN  
-      teams team_2 ON m.team_2 = team_2.id 
-    LEFT JOIN  
-      teams team_3 ON team_3.id = m.winner_team 
-    LEFT JOIN 
-      teams pt ON p.team_id = pt.id`;
-  
-  db.query(query, [id], (err, result) => {
+  db.query(`SELECT \
+  m.id, \
+  team_1.full_name AS team_1, \
+  team_1.icon AS team_1_icon, \
+  team_2.full_name AS team_2, \
+  team_2.icon AS team_2_icon, \
+  m.venue, \
+  DATE_FORMAT(m.date, '%e %b, %Y %l:%i %p') AS date, \
+  m.match_no, \
+  m.season_year, \
+  team_3.full_name AS winner_team, \
+  CASE \
+    WHEN m.date < CURRENT_TIMESTAMP THEN 'Match Over' \
+    WHEN DATE(m.date) = CURRENT_DATE THEN 'Today Match' \
+    ELSE 'Upcoming Match' \
+  END AS match_status, \
+  IF(DATEDIFF(m.date, CURRENT_DATE) = 0, \
+      TIME_FORMAT(TIMEDIFF(m.date, CURRENT_TIMESTAMP), \
+              '%H:%i'), \
+      CONCAT(DATEDIFF(m.date, CURRENT_DATE))) AS countdownDateTime, \
+  pt.short_name AS predicted_team \
+FROM \
+  matches m \
+      LEFT JOIN \
+  prediction p ON m.id = p.match_id AND p.user_id = ${id} \
+      LEFT JOIN \
+  teams team_1 ON team_1.id = m.team_1 \
+      LEFT JOIN \
+  teams team_2 ON team_2.id = m.team_2 \
+      LEFT JOIN \
+  teams team_3 ON team_3.id = m.winner_team \
+      LEFT JOIN \
+  teams pt ON p.team_id = pt.id \
+  WHERE \
+  m.date > now()  \
+    ORDER BY \
+  ABS(TIMESTAMPDIFF(SECOND, m.date, CURRENT_TIMESTAMP)) ASC 
+  LIMIT 3;`, (err, result) => {
     if (err) {
       console.error(err);
-      return res.status(500).send("An error occurred while fetching data from the database.");
+      res.status(500).send("An error occurred while fetching data from the database.");
+      return;
     }
-    
+
+    // Format the result here before sending the response
     const formattedResult = result.map(item => ({
-      match_id: item.match_id,
-      team_1: { name: item.team_1_name, icon: item.team_1_icon },
-      team_2: { name: item.team_2_name, icon: item.team_2_icon },
+      id: item.id,
+      team_1: item.team_1,
+      team_1_icon: item.team_1_icon,
+      team_2: item.team_2,
+      team_2_icon: item.team_2_icon,
       venue: item.venue,
       date: item.date,
       match_no: item.match_no,
       season_year: item.season_year,
       winner_team: item.winner_team,
-      countdownTime: item.countdownTime,
-      predicted_team_name: item.predicted_team_name
+      countdownTime: item.countdownDateTime,
+      predicted_team: item.predicted_team,
+      match_status: item.match_status
     }));
 
     res.send(formattedResult);
@@ -112,7 +123,7 @@ router.get("/dashboard/:id", (req, res) => {
 //  get one matches
 router.get("/prediction/:id", (req, res) => {
   const id = req.params.id;
-  db.query(`SELECT m.id,team_1.full_name as team_1,team_1.id as team_1_id,team_1.icon as team_1_icon,team_2.full_name as team_2,team_2.id as team_2_id,team_2.icon as team_2_icon,m.venue,m.date,m.match_no,m.season_year,m.winner_team FROM matches m left join teams team_1 on team_1.id = m.team_1 left join teams team_2 on team_2.id = m.team_2 WHERE m.id =${id};`, (err, result) => {
+  db.query(`SELECT m.id,team_1.full_name as team_1,team_1.id as team_1_id,team_1.icon as team_1_icon,team_2.full_name as team_2,team_2.id as team_2_id,team_2.icon as team_2_icon,m.venue,DATE_FORMAT(m.date, '%e %b, %Y %l:%i %p') AS date,m.match_no,m.season_year,m.winner_team FROM matches m left join teams team_1 on team_1.id = m.team_1 left join teams team_2 on team_2.id = m.team_2 WHERE m.id =${id};`, (err, result) => {
     if (err) {
       console.error(err)
     }
