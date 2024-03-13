@@ -54,7 +54,7 @@ router.get("/", (req, res) => {
 
 // dashboard matches list
 router.get("/dashboard/:id", (req, res) => {
-  const userId = req.params.userId;
+  const id = req.params.id;
   db.query(`SELECT 
               m.id AS match_id,
               m.team_1,
@@ -75,7 +75,7 @@ router.get("/dashboard/:id", (req, res) => {
             FROM 
               matches m
             LEFT JOIN 
-              prediction p ON m.id = p.match_id AND p.user_id = ${userId}
+              prediction p ON m.id = p.match_id AND p.user_id = ${id}
             LEFT JOIN 
               teams team_1 ON m.team_1 = team_1.id
             LEFT JOIN 
@@ -83,7 +83,7 @@ router.get("/dashboard/:id", (req, res) => {
             LEFT JOIN 
               teams team_3 ON team_3.id = m.winner_team
             LEFT JOIN 
-              teams pt ON p.team_id = pt.id`, [req.query.userId], (err, result) => {
+              teams pt ON p.team_id = pt.id;`, (err, result) => {
     if (err) {
       console.error(err);
       res.status(500).send("An error occurred while fetching data from the database.");
