@@ -76,7 +76,7 @@ router.get("/dashboard/:id", (req, res) => {
     FROM 
       matches m 
     LEFT JOIN  
-      prediction p ON m.id = p.match_id AND p.user_id = ? 
+      prediction p ON m.id = p.match_id AND p.user_id = ${id}
     LEFT JOIN  
       teams team_1 ON m.team_1 = team_1.id 
     LEFT JOIN  
