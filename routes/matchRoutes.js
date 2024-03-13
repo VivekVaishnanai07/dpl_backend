@@ -55,34 +55,34 @@ router.get("/", (req, res) => {
 // dashboard matches list
 router.get("/dashboard/:id", (req, res) => {
   const id = req.params.id;
-  db.query(`SELECT 
-              m.id AS match_id,
-              m.team_1,
-              team_1.full_name AS team_1_name,
-              t1.icon AS team_1_icon,
-              m.team_2,
-              team_2.full_name AS team_2_name,
-              t2.icon AS team_2_icon,
-              m.venue,
-              m.date,
-              m.match_no,
-              m.season_year,
-              team_3.full_name AS winner_team,
-              IF(DATEDIFF(m.date, CURRENT_DATE) = 0, 
-                  TIME_FORMAT(TIMEDIFF(m.date, CURRENT_TIMESTAMP), '%H:%i'), 
-                  CONCAT(DATEDIFF(m.date, CURRENT_DATE))) AS countdownTime,
-              pt.full_name AS predicted_team_name
-            FROM 
-              matches m
-            LEFT JOIN 
-              prediction p ON m.id = p.match_id AND p.user_id = ${id}
-            LEFT JOIN 
-              teams team_1 ON m.team_1 = team_1.id
-            LEFT JOIN 
-              teams team_2 ON m.team_2 = team_2.id
-            LEFT JOIN 
-              teams team_3 ON team_3.id = m.winner_team
-            LEFT JOIN 
+  db.query(`SELECT \
+              m.id AS match_id, \
+              m.team_1, \
+              team_1.full_name AS team_1_name, \
+              t1.icon AS team_1_icon, \
+              m.team_2, \
+              team_2.full_name AS team_2_name, \
+              t2.icon AS team_2_icon, \
+              m.venue, \
+              m.date, \
+              m.match_no, \
+              m.season_year, \
+              team_3.full_name AS winner_team, \
+              IF(DATEDIFF(m.date, CURRENT_DATE) = 0, \
+                  TIME_FORMAT(TIMEDIFF(m.date, CURRENT_TIMESTAMP), '%H:%i'), \
+                  CONCAT(DATEDIFF(m.date, CURRENT_DATE))) AS countdownTime, \
+              pt.full_name AS predicted_team_name \
+            FROM \
+              matches m \
+            LEFT JOIN  \
+              prediction p ON m.id = p.match_id AND p.user_id = ${id} \
+            LEFT JOIN  \
+              teams team_1 ON m.team_1 = team_1.id \
+            LEFT JOIN  \
+              teams team_2 ON m.team_2 = team_2.id \
+            LEFT JOIN  \
+              teams team_3 ON team_3.id = m.winner_team \
+            LEFT JOIN \
               teams pt ON p.team_id = pt.id;`, (err, result) => {
     if (err) {
       console.error(err);
