@@ -16,7 +16,7 @@ router.get('/:user_id/:match_id', (req, res) => {
   );
 })
 
-// add prediction
+// edit prediction
 router.put('/:team_id/:id', (req, res) => {
   const team_id = req.params.team_id;
   const id = req.params.id;
@@ -29,7 +29,7 @@ router.put('/:team_id/:id', (req, res) => {
   );
 })
 
-// edit prediction
+// add prediction
 router.post('/add-prediction', (req, res) => {
   const updateData = req.body;
   db.query(`INSERT INTO prediction(match_id, user_id, team_id) VALUES('${updateData.match_id}', '${updateData.user_id}', '${updateData.team_id}')`, (err, result) => {
