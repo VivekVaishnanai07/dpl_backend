@@ -15,19 +15,6 @@ router.get("/", (req, res) => {
   });
 });
 
-// Get one user by email
-router.get("/getEmail/:email", (req, res) => {
-  const email = req.params.email;
-  db.query("SELECT * FROM users WHERE email = ?", email, (err, result) => {
-    if (err) {
-      console.error(err);
-      res.status(500).send("Internal Server Error");
-      return;
-    }
-    res.send(result);
-  });
-});
-
 // Get one user by id
 router.get("/:id", (req, res) => {
   const id = req.params.id;
