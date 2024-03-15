@@ -5,7 +5,7 @@ const userRoutes = require('./routes/userRoutes');
 const teamRoutes = require('./routes/teamRoutes');
 const matchRoutes = require('./routes/matchRoutes');
 const predictionRoutes = require('./routes/predictionRoutes');
-const statusRoute = require('./routes/statusRoute');
+const predictionAnalysisRoute = require('./routes/predictionAnalysisRoute');
 const playerLeaderboardRoute = require('./routes/player-leaderboard');
 
 const app = express();
@@ -18,7 +18,7 @@ app.use("/api/user", userRoutes);
 app.use("/api/team", teamRoutes);
 app.use("/api/match", matchRoutes);
 app.use("/api/prediction", predictionRoutes);
-app.use("/api/status", statusRoute);
+app.use("/api/prediction-analysis", predictionAnalysisRoute);
 app.use("/api/player-leaderboard", playerLeaderboardRoute);
 
 app.listen(PORT, () => {
