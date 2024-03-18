@@ -14,7 +14,7 @@ const playerLeaderboardRoute = require('./routes/player-leaderboard');
 const app = express();
 dotenv.config();
 
-const PORT = process.env.PORT | 3300;
+const PORT = process.env.PORT || 3300;
 app.use(cors());
 app.use(express.json());
 
@@ -26,9 +26,15 @@ const verifyToken = (req, res, next) => {
   if (!token) {
     return res.status(401).json({ message: 'Token not provided' });
   }
+
   jwt.verify(token, process.env.JWT_SECRET_KEY, (err, decoded) => {
     if (err) {
-      return res.status(401).json({ message: 'Invalid token' });
+      console.log(err)
+      if (err.name === 'TokenExpiredError') {
+        return res.status(401).json({ message: 'Invalid token' });
+      } else {
+        return res.status(401).json({ message: 'Token expired' });
+      }
     }
 
     req.user = decoded;
@@ -56,8 +62,8 @@ app.post("/api/login", (req, res) => {
         "lastName": userData.lastName,
         "role": userData.role,
       }
-
-      const token = jwt.sign(data, process.env.JWT_SECRET_KEY, { expiresIn: '10m' });
+      const expirationTime = Math.floor(Date.now() / 1000) + (30 * 60); // 30 minutes expiration
+      const token = jwt.sign(data, process.env.JWT_SECRET_KEY, { expiresIn: expirationTime });
       res.json({ token });
     } else {
       res.send('Your Email and Password is incorrect')
@@ -70,6 +76,39 @@ app.post("/api/login", (req, res) => {
     }
   });
 });
+
+// Change password
+app.post("/api/change-password", verifyToken, (req, res) => {
+  const { userId, oldPassword, newPassword, confirmPassword } = req.body;
+
+  // Check if old password matches
+  db.query(`SELECT * FROM users WHERE id = ${userId} AND password = '${oldPassword}';`, (err, result) => {
+    if (err) {
+      console.error(err);
+      return err.status(500).json({ message: 'Internal Server Error' });
+    }
+
+    const user = result[0];
+    if (!user) {
+      return err.status(401).json({ message: 'Invalid old password' });
+    }
+
+    // Check if new password and confirm password match
+    if (newPassword !== confirmPassword) {
+      return err.status(400).json({ message: 'New password and confirm password do not match' });
+    }
+
+    // Update password
+    db.query(`UPDATE users SET password = '${newPassword}' WHERE id = ${userId};`, (err, result) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ message: 'Internal Server Error' });
+      }
+      res.json({ message: 'Password updated successfully' });
+    });
+  });
+});
+
 
 app.listen(PORT, () => {
   console.log(`Server is running on ${PORT}`);
