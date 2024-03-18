@@ -42,6 +42,21 @@ const verifyToken = (req, res, next) => {
   });
 };
 
+// create profile pic name first letter and background color
+const capitalizeAndChangeColor = (firstName, lastName) => {
+  if (firstName && lastName) {
+    const capitalizedFirstName = firstName.charAt(0).toUpperCase()
+    const capitalizedLastName = lastName.charAt(0).toUpperCase()
+    const randomColor = '#' + (Math.random().toString(16) + '000000').slice(2, 8);
+    const result = {
+      firstName: capitalizedFirstName,
+      lastName: capitalizedLastName,
+      backgroundColor: randomColor,
+    };
+    return result;
+  }
+};
+
 // Apply token verification middleware to protected routes
 app.use("/api/user", verifyToken, userRoutes);
 app.use("/api/team", verifyToken, teamRoutes);
@@ -61,6 +76,7 @@ app.post("/api/login", (req, res) => {
         "firstName": userData.firstName,
         "lastName": userData.lastName,
         "role": userData.role,
+        "avatarObj": capitalizeAndChangeColor(userData.firstName, userData.lastName)
       }
       const expirationTime = Math.floor(Date.now() / 1000) + (30 * 60); // 30 minutes expiration
       const token = jwt.sign(data, process.env.JWT_SECRET_KEY, { expiresIn: expirationTime });
