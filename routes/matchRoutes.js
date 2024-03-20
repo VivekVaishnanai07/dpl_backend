@@ -81,7 +81,7 @@ router.get("/dashboard/:id", (req, res) => {
   team_2.full_name AS team_2, \
   team_2.icon AS team_2_icon, \
   m.venue, \
-  DATE_FORMAT(m.date, '%e %b, %Y %l:%i %p') AS date, \
+  m.date, \
   m.match_no, \
   m.season_year, \
   team_3.full_name AS winner_team, \
@@ -142,7 +142,7 @@ FROM \
 //  get one matches
 router.get("/prediction/:id", (req, res) => {
   const id = req.params.id;
-  db.query(`SELECT m.id, team_1.full_name as team_1, team_1.id as team_1_id, team_1.icon as team_1_icon, team_2.full_name as team_2, team_2.id as team_2_id, team_2.icon as team_2_icon, m.venue, DATE_FORMAT(m.date, '%e %b, %Y %l:%i %p') AS date, m.match_no, m.season_year, m.winner_team FROM matches m left join teams team_1 on team_1.id = m.team_1 left join teams team_2 on team_2.id = m.team_2 WHERE m.id = ${id}; `, (err, result) => {
+  db.query(`SELECT m.id, team_1.full_name as team_1, team_1.id as team_1_id, team_1.icon as team_1_icon, team_2.full_name as team_2, team_2.id as team_2_id, team_2.icon as team_2_icon, m.venue, m.date, m.match_no, m.season_year, m.winner_team FROM matches m left join teams team_1 on team_1.id = m.team_1 left join teams team_2 on team_2.id = m.team_2 WHERE m.id = ${id}; `, (err, result) => {
     if (err) {
       console.error(err)
     }
