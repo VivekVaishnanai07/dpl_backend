@@ -78,8 +78,7 @@ app.post("/api/login", (req, res) => {
         "role": userData.role,
         "avatarObj": capitalizeAndChangeColor(userData.firstName, userData.lastName)
       }
-      const expirationTime = Math.floor(Date.now() / 1000) + (30 * 60); // 30 minutes expiration
-      const token = jwt.sign(data, process.env.JWT_SECRET_KEY, { expiresIn: expirationTime });
+      const token = jwt.sign(data, process.env.JWT_SECRET_KEY, { expiresIn: 1800 });
       res.json({ token });
     } else {
       res.send('Your Email and Password is incorrect')

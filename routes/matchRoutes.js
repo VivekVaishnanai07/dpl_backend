@@ -13,6 +13,7 @@ router.get("/", (req, res) => {
       team_2.full_name AS team_2, 
       team_2.icon AS team_2_icon, 
       m.venue, 
+      m.match_price,
       m.date, 
       m.match_no, 
       m.season_year, 
@@ -38,19 +39,6 @@ router.get("/", (req, res) => {
       return;
     }
 
-    const formattedTime = (data) => {
-      // Parse the original UTC datetime string
-      const utcDatetime = new Date(data);
-
-      // Convert the UTC datetime to Indian Standard Time (IST)
-      utcDatetime.setUTCHours(utcDatetime.getUTCHours() + 5); // Add 5 hours for IST
-      utcDatetime.setUTCMinutes(utcDatetime.getUTCMinutes() + 30); // Add 30 minutes for IST
-
-      // Format the resulting datetime string in IST to 'hh:mm A' format
-      const formattedTime = utcDatetime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-      return formattedTime;
-    }
-
     // Format the result here before sending the response
     const formattedResult = result.map(item => ({
       id: item.id,
@@ -59,12 +47,12 @@ router.get("/", (req, res) => {
       team_2: item.team_2,
       team_2_icon: item.team_2_icon,
       venue: item.venue,
+      match_price: item.match_price,
       date: item.date,
       match_no: item.match_no,
       season_year: item.season_year,
       winner_team: item.winner_team,
-      countdownTime: item.countdownTime,
-      time: formattedTime(item.date)
+      countdownTime: item.countdownTime
     }));
 
     res.send(formattedResult);
@@ -81,6 +69,7 @@ router.get("/dashboard/:id", (req, res) => {
   team_2.full_name AS team_2, \
   team_2.icon AS team_2_icon, \
   m.venue, \
+  m.match_price, \
   m.date, \
   m.match_no, \
   m.season_year, \
@@ -126,6 +115,7 @@ FROM \
       team_2: item.team_2,
       team_2_icon: item.team_2_icon,
       venue: item.venue,
+      match_price: item.match_price,
       date: item.date,
       match_no: item.match_no,
       season_year: item.season_year,
@@ -166,7 +156,7 @@ router.get("/:id", (req, res) => {
 // creating new matches
 router.post('/add-match', (req, res) => {
   const updateData = req.body;
-  db.query(`INSERT INTO matches(date, team_1, team_2, venue, match_no, season_year) VALUES('${updateData.date}', '${updateData.team_1}', '${updateData.team_2}', '${updateData.venue}', '${updateData.match_no}', '${updateData.season_year}')`, (err, result) => {
+  db.query(`INSERT INTO matches(date, team_1, team_2, venue, match_price, match_no, season_year) VALUES('${updateData.date}', '${updateData.team_1}', '${updateData.team_2}', '${updateData.venue}', ${updateData.match_price}, '${updateData.match_no}', '${updateData.season_year}')`, (err, result) => {
     if (err) {
       console.error(err)
     }
@@ -179,7 +169,7 @@ router.post('/add-match', (req, res) => {
 router.put('/:id', (req, res) => {
   const id = req.params.id;
   const updateData = req.body;
-  const sql = `UPDATE matches SET date = '${updateData.date}', team_1 = '${updateData.team_1}', team_2 = '${updateData.team_2}', venue = '${updateData.venue}', match_no = '${updateData.match_no}', season_year = '${updateData.season_year}' WHERE id = ${id} `;
+  const sql = `UPDATE matches SET team_1 = '${updateData.team_1}', team_2 = '${updateData.team_2}', venue = '${updateData.venue}', match_price = ${updateData.match_price}, match_no = '${updateData.match_no}', season_year = '${updateData.season_year}' WHERE id = ${id} `;
   db.query(sql, (err, result) => {
     if (err) {
       console.error(err);
@@ -194,16 +184,33 @@ router.put('/:id', (req, res) => {
 router.put('/winner-team/:id/:teamId', (req, res) => {
   const id = req.params.id;
   const teamId = req.params.teamId;
-  const sql = `UPDATE matches SET winner_team = '${teamId}' WHERE id = ${id} `;
-  db.query(sql, (err, result) => {
+
+  // Check if the winner_team is already set for the match
+  const checkSql = `SELECT winner_team FROM matches WHERE id = ${id}`;
+  db.query(checkSql, (err, result) => {
     if (err) {
       console.error(err);
       res.status(500).json({ error: 'Internal Server Error' });
     } else {
-      res.status(200).json({ message: 'Match updated successfully' });
+      // If winner_team is already set, return an error
+      if (result && result.length > 0 && result[0].winner_team !== null) {
+        res.status(403).json({ message: 'Winner team is already set for this match' });
+      } else {
+        // Proceed with updating the winner team
+        const updateSql = `UPDATE matches SET winner_team = '${teamId}' WHERE id = ${id}`;
+        db.query(updateSql, (err, result) => {
+          if (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Internal Server Error' });
+          } else {
+            res.status(200).json({ message: 'Match updated successfully' });
+          }
+        });
+      }
     }
   });
 });
+
 
 // delete a match
 router.delete('/:id', (req, res) => {
