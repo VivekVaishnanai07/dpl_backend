@@ -185,28 +185,14 @@ router.put('/winner-team/:id/:teamId', (req, res) => {
   const id = req.params.id;
   const teamId = req.params.teamId;
 
-  // Check if the winner_team is already set for the match
-  const checkSql = `SELECT winner_team FROM matches WHERE id = ${id}`;
-  db.query(checkSql, (err, result) => {
+  // Proceed with updating the winner team
+  const updateSql = `UPDATE matches SET winner_team = '${teamId}' WHERE id = ${id}`;
+  db.query(updateSql, (err, result) => {
     if (err) {
       console.error(err);
       res.status(500).json({ error: 'Internal Server Error' });
     } else {
-      // If winner_team is already set, return an error
-      if (result && result.length > 0 && result[0].winner_team !== null) {
-        res.status(403).json({ message: 'Winner team is already set for this match' });
-      } else {
-        // Proceed with updating the winner team
-        const updateSql = `UPDATE matches SET winner_team = '${teamId}' WHERE id = ${id}`;
-        db.query(updateSql, (err, result) => {
-          if (err) {
-            console.error(err);
-            res.status(500).json({ error: 'Internal Server Error' });
-          } else {
-            res.status(200).json({ message: 'Match updated successfully' });
-          }
-        });
-      }
+      res.status(200).json({ message: 'Match updated successfully' });
     }
   });
 });
