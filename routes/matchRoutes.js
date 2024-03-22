@@ -170,16 +170,37 @@ router.post('/add-match', verifyRoleOrToken(['admin']), (req, res) => {
 router.put('/:id', verifyRoleOrToken(['admin']), (req, res) => {
   const id = req.params.id;
   const updateData = req.body;
-  const sql = `UPDATE matches SET team_1 = '${updateData.team_1}', team_2 = '${updateData.team_2}', venue = '${updateData.venue}', match_price = ${updateData.match_price}, match_no = '${updateData.match_no}', season_year = '${updateData.season_year}' WHERE id = ${id} `;
-  db.query(sql, (err, result) => {
-    if (err) {
-      console.error(err);
-      res.status(500).json({ error: 'Internal Server Error' });
-    } else {
-      res.status(200).json({ message: 'Match updated successfully' });
+
+  // Check if any user has predicted the match
+  const predictionCheckQuery = `SELECT COUNT(*) AS predictionCount FROM prediction WHERE match_id = ${id}`;
+
+  db.query(predictionCheckQuery, (predictionErr, predictionResult) => {
+    if (predictionErr) {
+      console.error(predictionErr);
+      return res.status(500).json({ error: 'Internal Server Error' });
     }
+
+    const predictionCount = predictionResult[0].predictionCount;
+
+    // If any user has predicted the match, do not execute the update query
+    if (predictionCount > 0) {
+      return res.status(400).json({ error: 'Match cannot be updated as it has predictions' });
+    }
+
+    // If no user has predicted the match, execute the update query
+    const sql = `UPDATE matches SET team_1 = '${updateData.team_1}', team_2 = '${updateData.team_2}', venue = '${updateData.venue}', match_price = ${updateData.match_price}, match_no = '${updateData.match_no}', season_year = '${updateData.season_year}' WHERE id = ${id}`;
+
+    db.query(sql, (err, result) => {
+      if (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Internal Server Error' });
+      } else {
+        res.status(200).json({ message: 'Match updated successfully' });
+      }
+    });
   });
 });
+
 
 // add winner team
 router.put('/winner-team/:id/:teamId', verifyRoleOrToken(['admin']), (req, res) => {
@@ -202,12 +223,33 @@ router.put('/winner-team/:id/:teamId', verifyRoleOrToken(['admin']), (req, res) 
 // delete a match
 router.delete('/:id', verifyRoleOrToken(['admin']), (req, res) => {
   const id = req.params.id;
-  db.query("DELETE FROM matches WHERE id= ?", id, (err, result) => {
-    if (err) {
-      console.error(err)
+
+  // Check if any user has predicted the match
+  const predictionCheckQuery = `SELECT COUNT(*) AS predictionCount FROM prediction WHERE match_id = ${id}`;
+
+  db.query(predictionCheckQuery, (predictionErr, predictionResult) => {
+    if (predictionErr) {
+      console.error(predictionErr);
+      return res.status(500).json({ error: 'Internal Server Error' });
     }
-    res.send(result)
-  })
-})
+
+    const predictionCount = predictionResult[0].predictionCount;
+
+    // If any user has predicted the match, do not execute the delete operation
+    if (predictionCount > 0) {
+      return res.status(400).json({ error: 'Match cannot be deleted as it has predictions' });
+    }
+
+    // If no user has predicted the match, execute the delete operation
+    db.query(`DELETE FROM matches WHERE id = ${id}`, (err, result) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'Internal Server Error' });
+      }
+      res.send(result);
+    });
+  });
+});
+
 
 module.exports = router;
