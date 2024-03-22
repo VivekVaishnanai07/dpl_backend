@@ -3,6 +3,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const db = require('./config/db.config');
 const jwt = require('jsonwebtoken');
+const verifyRoleOrToken = require('./middlewares/verifyRoleOrToken');
 
 const userRoutes = require('./routes/userRoutes');
 const teamRoutes = require('./routes/teamRoutes');
@@ -18,37 +19,13 @@ const PORT = process.env.PORT || 3300;
 app.use(cors());
 app.use(express.json());
 
-// Middleware to verify token
-const verifyToken = (req, res, next) => {
-  const tokenWithBearer = req.headers['authorization'];
-  const token = tokenWithBearer.substring(7);
-
-  if (!token) {
-    return res.status(401).json({ message: 'Token not provided' });
-  }
-
-  jwt.verify(token, process.env.JWT_SECRET_KEY, (err, decoded) => {
-    if (err) {
-      console.log(err)
-      if (err.name === 'TokenExpiredError') {
-        return res.status(401).json({ message: 'Invalid token' });
-      } else {
-        return res.status(401).json({ message: 'Token expired' });
-      }
-    }
-
-    req.user = decoded;
-    next();
-  });
-};
-
 // Apply token verification middleware to protected routes
-app.use("/api/user", verifyToken, userRoutes);
-app.use("/api/team", verifyToken, teamRoutes);
-app.use("/api/match", verifyToken, matchRoutes);
-app.use("/api/prediction", verifyToken, predictionRoutes);
-app.use("/api/prediction-analysis", verifyToken, predictionAnalysisRoute);
-app.use("/api/player-leaderboard", verifyToken, playerLeaderboardRoute);
+app.use("/api/user", verifyRoleOrToken(['admin']), userRoutes);
+app.use("/api/team", teamRoutes);
+app.use("/api/match", matchRoutes);
+app.use("/api/prediction", verifyRoleOrToken(['admin', 'user']), predictionRoutes);
+app.use("/api/prediction-analysis", verifyRoleOrToken(['admin', 'user']), predictionAnalysisRoute);
+app.use("/api/player-leaderboard", verifyRoleOrToken(['admin', 'user']), playerLeaderboardRoute);
 
 // Generating JWT
 app.post("/api/login", (req, res) => {
@@ -77,7 +54,7 @@ app.post("/api/login", (req, res) => {
 });
 
 // Change password
-app.post("/api/change-password", verifyToken, (req, res) => {
+app.post("/api/change-password", verifyRoleOrToken(['admin', 'user']), (req, res) => {
   const { userId, oldPassword, newPassword, confirmPassword } = req.body;
 
   // Check if old password matches
@@ -107,7 +84,6 @@ app.post("/api/change-password", verifyToken, (req, res) => {
     });
   });
 });
-
 
 app.listen(PORT, () => {
   console.log(`Server is running on ${PORT}`);

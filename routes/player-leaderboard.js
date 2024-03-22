@@ -5,76 +5,54 @@ const router = express.Router();
 
 // player leaderboard list get
 router.get('/', (req, res) => {
-  db.query(`SELECT 
-  u.id AS user_id,
-  CONCAT(u.first_name, ' ', u.last_name) AS userName,
-  COUNT(CASE
-      WHEN m.winner_team = p.team_id THEN 1
-  END) AS won_matches,
-  COUNT(CASE
-      WHEN
-          m.winner_team IS NOT NULL
-              AND m.winner_team != p.team_id
-              AND p.team_id IS NOT NULL
-      THEN
-          1
-  END) + (total_match_count.total_match_count - COUNT(DISTINCT p.match_id)) - (upcoming_match_count.upcoming_match) AS lost_matches,
-  total_match_count.total_match_count AS total_matches,
-  (IFNULL(SUM(CASE
-              WHEN
-                  m.winner_team IS NOT NULL
-                      AND m.winner_team != p.team_id
-                      AND p.team_id IS NOT NULL
-              THEN
-                  m.match_price
-          END),
-          0) + (SELECT 
-          IFNULL(SUM(match_price), 0)
-      FROM
-          matches
-      WHERE
-          id NOT IN (SELECT 
-                  match_id
-              FROM
-                  prediction
-              WHERE
-                  user_id = u.id) and date < DATE_FORMAT(UTC_TIMESTAMP(), '%Y-%m-%dT%T.%fZ'))) AS pay_money,
-  CASE
-      WHEN streak >= 3 THEN 'Up'
-      WHEN streak <= - 3 THEN 'Down'
-      ELSE ''
-  END AS streak,
-  upcoming_match_count.upcoming_match AS upcoming_match
+  db.query(`SELECT
+    u.id AS user_id, 
+   CONCAT(u.first_name, ' ', u.last_name) AS full_name,
+   COUNT(DISTINCT m.id) AS total_matches,
+   COUNT(DISTINCT p.match_id) AS predicted_matches,
+   SUM(CASE WHEN p.team_id = m.winner_team THEN 1 ELSE 0 END) AS win_matches,
+   SUM(CASE WHEN p.team_id IS NOT NULL AND p.team_id != m.winner_team THEN 1 ELSE 0 END) AS lose_matches,
+   SUM(
+    CASE 
+      WHEN p.user_id IS NULL AND m.date < CURDATE() THEN 1
+      ELSE 0
+    END
+   ) AS unpredicted_past_matches,
+   SUM(
+    CASE 
+      WHEN p.user_id IS NULL AND m.date > CURDATE() THEN 1
+      ELSE 0
+    END
+  ) AS unpredicted_future_matches,
+  SUM(
+    CASE 
+      WHEN m.date > CURDATE() THEN 1
+      ELSE 0
+    END
+  ) AS upcoming_matches,
+  SUM(
+    CASE 
+      WHEN p.user_id IS NULL AND m.date < CURDATE() THEN 1
+      ELSE 0
+    END
+  ) + 
+  SUM(CASE WHEN p.team_id IS NOT NULL AND p.team_id != m.winner_team THEN 1 ELSE 0 END) AS total_lose_matches,
+   SUM(
+    CASE 
+      WHEN p.user_id IS NULL AND m.date < CURDATE() THEN m.match_price
+      ELSE 0
+    END
+  ) + 
+  SUM(
+    CASE WHEN p.team_id IS NOT NULL AND p.team_id != m.winner_team THEN m.match_price ELSE 0 END
+  ) AS to_pay_money
 FROM
   users u
-      LEFT JOIN
-  prediction p ON u.id = p.user_id
-      LEFT JOIN
-  matches m ON m.id = p.match_id
-      CROSS JOIN
-  (SELECT 
-      COUNT(*) AS total_match_count
-  FROM
-      matches) AS total_match_count
-      LEFT JOIN
-  (SELECT 
-      p.user_id,
-          SUM(CASE
-              WHEN p.team_id = m.winner_team THEN 1
-              ELSE - 1
-          END) AS streak
-  FROM
-      prediction p
-  JOIN matches m ON p.match_id = m.id
-  GROUP BY p.user_id) AS s ON u.id = s.user_id
-      CROSS JOIN
-  (SELECT 
-      COUNT(*) AS upcoming_match
-  FROM
-      matches
-  WHERE date > DATE_FORMAT(UTC_TIMESTAMP(), '%Y-%m-%dT%T.%fZ')) AS upcoming_match_count
-GROUP BY u.id , userName , total_match_count.total_match_count , streak , upcoming_match
-ORDER BY won_matches DESC;`, (err, result) => {
+LEFT JOIN matches m ON 1=1
+LEFT JOIN prediction p ON u.id = p.user_id AND m.id = p.match_id
+GROUP BY
+  u.id, u.first_name, u.last_name
+ORDER BY win_matches desc`, (err, result) => {
     if (err) {
       console.error(err);
     }
