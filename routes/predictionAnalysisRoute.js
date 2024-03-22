@@ -93,7 +93,7 @@ FROM
       LEFT JOIN
   teams t3 ON t3.id = m.winner_team
 ORDER BY
-  m.date DESC;`, (err, result) => {
+  m.match_no ASC;`, (err, result) => {
     if (err) {
       console.error(err)
     }
