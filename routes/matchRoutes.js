@@ -65,10 +65,14 @@ router.get("/dashboard/:id", verifyRoleOrToken(['admin', 'user']), (req, res) =>
   const id = req.params.id;
   db.query(`SELECT \
   m.id, \
+  team_1.id AS team_1_id, \
   team_1.full_name AS team_1, \
   team_1.icon AS team_1_icon, \
+  team_1.team_color AS team_1_color, \
+  team_2.id AS team_2_id, \
   team_2.full_name AS team_2, \
   team_2.icon AS team_2_icon, \
+  team_2.team_color AS team_2_color, \
   m.venue, \
   m.match_price, \
   m.date, \
@@ -111,10 +115,14 @@ FROM \
     // Format the result here before sending the response
     const formattedResult = result.map(item => ({
       id: item.id,
+      team_1_id: item.team_1_id,
       team_1: item.team_1,
       team_1_icon: item.team_1_icon,
+      team_1_color: item.team_1_color,
+      team_2_id: item.team_2_id,
       team_2: item.team_2,
       team_2_icon: item.team_2_icon,
+      team_2_color: item.team_2_color,
       venue: item.venue,
       match_price: item.match_price,
       date: item.date,

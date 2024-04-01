@@ -55,4 +55,20 @@ router.post('/add-prediction', (req, res) => {
   });
 })
 
+// get match prediction user
+router.get('/:matchId', (req, res) => {
+  const matchId = req.params.matchId;
+  db.query(`SELECT u.first_name, u.last_name, t.id AS predicted_team_id
+    FROM prediction p
+    JOIN users u ON p.user_id = u.id
+    JOIN teams t ON p.team_id = t.id
+    WHERE p.match_id = ${matchId};`, (err, result) => {
+    if (err) {
+      console.error(err)
+    }
+    res.send(result)
+  });
+})
+
+
 module.exports = router;
