@@ -4,10 +4,10 @@ const db = require('../config/db.config');
 const router = express.Router();
 
 // get prediction
-router.get('/:user_id/:match_id', (req, res) => {
-  const user_id = req.params.user_id;
-  const match_id = req.params.match_id;
-  db.query(`SELECT * FROM prediction where user_id = ${user_id} and match_id = ${match_id}`, (err, result) => {
+router.get('/:userId/:matchId', (req, res) => {
+  const userId = req.params.userId;
+  const matchId = req.params.matchId;
+  db.query(`SELECT * FROM prediction where user_id = ${userId} and match_id = ${matchId}`, (err, result) => {
     if (err) {
       console.error(err)
     }
@@ -17,14 +17,14 @@ router.get('/:user_id/:match_id', (req, res) => {
 })
 
 // edit prediction
-router.put('/:team_id/:predictionId/:matchId', (req, res) => {
-  const team_id = req.params.team_id;
+router.put('/:teamId/:predictionId/:matchId', (req, res) => {
+  const teamId = req.params.teamId;
   const predictionId = req.params.predictionId;
   const matchId = req.params.matchId;
-
   db.query(`select CAST(date as DATETIME) > now() as canUpdate from matches where id=${matchId};`, (err, result) => {
     if (result[0].canUpdate === 1) {
-      db.query(`UPDATE prediction SET team_id=${team_id} WHERE id=${predictionId}`, (err, result) => {
+      console.log(req.params)
+      db.query(`UPDATE prediction SET team_id=${teamId} WHERE id=${predictionId}`, (err, result) => {
         if (err) {
           console.error(err)
         }
@@ -40,9 +40,9 @@ router.put('/:team_id/:predictionId/:matchId', (req, res) => {
 // add prediction
 router.post('/add-prediction', (req, res) => {
   const updateData = req.body;
-  db.query(`select CAST(date as DATETIME) > now() as canUpdate from matches where id=${updateData.match_id};`, (err, result) => {
+  db.query(`select CAST(date as DATETIME) > now() as canUpdate from matches where id=${updateData.matchId};`, (err, result) => {
     if (result[0].canUpdate === 1) {
-      db.query(`INSERT INTO prediction(match_id, user_id, team_id) VALUES('${updateData.match_id}', '${updateData.user_id}', '${updateData.team_id}')`, (err, result) => {
+      db.query(`INSERT INTO prediction(match_id, user_id, team_id) VALUES('${updateData.matchId}', '${updateData.userId}', '${updateData.teamId}')`, (err, result) => {
         if (err) {
           console.error(err)
         }

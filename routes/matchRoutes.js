@@ -6,33 +6,26 @@ const router = express.Router();
 
 // get matches list
 router.get("/", verifyRoleOrToken(['admin', 'user']), (req, res) => {
-  const seasonYear = req.body.seasonYear ? req.body.seasonYear : null;
   const sqlQuery = `SELECT 
-      m.id, 
-      team_1.full_name AS team_1, 
-      team_1.icon AS team_1_icon, 
-      team_2.full_name AS team_2, 
-      team_2.icon AS team_2_icon, 
-      m.venue, 
-      m.match_price,
-      m.date, 
-      m.match_no, 
-      m.season_year, 
-      team_3.full_name AS winner_team, 
-      IF(DATEDIFF(m.date, CURRENT_DATE) = 0, 
-          TIME_FORMAT(TIMEDIFF(m.date, CURRENT_TIMESTAMP), '%H:%i'), 
-          CONCAT(DATEDIFF(m.date, CURRENT_DATE))) AS countdownTime 
-    FROM 
-      matches m 
-    INNER JOIN 
-      teams team_1 ON team_1.id = m.team_1 
-    INNER JOIN 
-      teams team_2 ON team_2.id = m.team_2 
-    LEFT JOIN 
-      teams team_3 ON team_3.id = m.winner_team
-    WHERE 
-      IF(${seasonYear} IS NOT NULL, m.season_year = ${seasonYear}, 1);`;
-
+  m.id, 
+  team_1.full_name AS team_1, 
+  team_1.icon AS team_1_icon, 
+  team_2.full_name AS team_2, 
+  team_2.icon AS team_2_icon, 
+  m.venue, 
+  m.match_price,
+  m.date, 
+  m.match_no, 
+  m.season_year, 
+  team_3.full_name AS winner_team
+  FROM 
+    matches m 
+  INNER JOIN 
+    teams team_1 ON team_1.id = m.team_1 
+  INNER JOIN 
+    teams team_2 ON team_2.id = m.team_2 
+  LEFT JOIN 
+    teams team_3 ON team_3.id = m.winner_team;`;
   db.query(sqlQuery, (err, result) => {
     if (err) {
       console.error(err);
@@ -53,7 +46,6 @@ router.get("/", verifyRoleOrToken(['admin', 'user']), (req, res) => {
       match_no: item.match_no,
       season_year: item.season_year,
       winner_team: item.winner_team,
-      countdownTime: item.countdownTime
     }));
 
     res.send(formattedResult);
