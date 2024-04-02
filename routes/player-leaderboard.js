@@ -5,7 +5,7 @@ const router = express.Router();
 
 // player leaderboard list get
 router.get('/', (req, res) => {
-  db.query(`SELECT
+    db.query(`SELECT
   u.id AS user_id, 
   CONCAT(u.first_name, ' ', u.last_name) AS full_name,
   COUNT(DISTINCT m.id) AS total_matches,
@@ -28,7 +28,8 @@ router.get('/', (req, res) => {
   SUM(CASE WHEN p.user_id IS NULL AND m.date < CURDATE() THEN 1 ELSE 0 END) AS unpredicted_past_matches,
   SUM(CASE WHEN p.user_id IS NULL AND m.date > CURDATE() THEN 1 ELSE 0 END) AS unpredicted_future_matches,
   SUM(CASE WHEN m.date > CURDATE() THEN 1 ELSE 0 END) AS upcoming_matches,
-  SUM(CASE 
+  SUM(
+      CASE 
           WHEN p.team_id IS NOT NULL THEN
               CASE 
                   WHEN p.team_id != m.winner_team THEN m.match_price
@@ -39,9 +40,21 @@ router.get('/', (req, res) => {
                   WHEN m.winner_team IS NOT NULL THEN m.match_price
                   ELSE 0 
               END 
-      END) AS pay_money,
+      END
+  ) AS pay_money,
   SUM(CASE WHEN p.user_id IS NULL THEN 1 ELSE 0 END) AS total_unpredicted_matches,
-  (SUM(CASE WHEN p.team_id = m.winner_team THEN 1 ELSE 0 END) / COUNT(DISTINCT m.id)) * 100 AS win_percentage,
+  (SUM(CASE WHEN p.team_id = m.winner_team THEN 1 ELSE 0 END) / (SUM(CASE WHEN p.team_id = m.winner_team THEN 1 ELSE 0 END) + SUM(CASE 
+          WHEN p.team_id IS NOT NULL THEN
+              CASE 
+                  WHEN p.team_id != m.winner_team THEN 1 
+                  ELSE 0 
+              END
+          ELSE 
+              CASE 
+                  WHEN m.winner_team IS NOT NULL THEN 1 
+                  ELSE 0 
+              END 
+      END))) * 100 AS win_percentage,
   (CASE 
       WHEN (
           SELECT 
@@ -75,11 +88,11 @@ GROUP BY
   u.id, u.first_name, u.last_name
 ORDER BY 
   win_percentage DESC;`, (err, result) => {
-    if (err) {
-      console.error(err);
-    }
-    res.send(result);
-  });
+        if (err) {
+            console.error(err);
+        }
+        res.send(result);
+    });
 });
 
 
