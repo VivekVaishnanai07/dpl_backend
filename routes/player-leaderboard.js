@@ -40,15 +40,41 @@ router.get('/', (req, res) => {
                   ELSE 0 
               END 
       END) AS pay_money,
-  SUM(CASE WHEN p.user_id IS NULL THEN 1 ELSE 0 END) AS total_unpredicted_matches
+  SUM(CASE WHEN p.user_id IS NULL THEN 1 ELSE 0 END) AS total_unpredicted_matches,
+  (SUM(CASE WHEN p.team_id = m.winner_team THEN 1 ELSE 0 END) / COUNT(DISTINCT m.id)) * 100 AS win_percentage,
+  (CASE 
+      WHEN (
+          SELECT 
+              COUNT(*) 
+          FROM 
+              (
+                  SELECT 
+                      CASE WHEN p1.team_id = m1.winner_team THEN 'W' ELSE 'L' END AS result
+                  FROM 
+                      prediction p1
+                  INNER JOIN 
+                      matches m1 ON p1.match_id = m1.id
+                  WHERE 
+                      p1.user_id = u.id
+                  ORDER BY 
+                      m1.date DESC
+                  LIMIT 3
+              ) AS recent_results
+          WHERE 
+              result = 'W'
+      ) = 3 THEN 'true'
+      ELSE 'false'
+  END) AS streak
 FROM
   users u
-LEFT JOIN matches m ON 1=1
-LEFT JOIN prediction p ON u.id = p.user_id AND m.id = p.match_id
+LEFT JOIN 
+  matches m ON 1=1
+LEFT JOIN 
+  prediction p ON u.id = p.user_id AND m.id = p.match_id
 GROUP BY
   u.id, u.first_name, u.last_name
 ORDER BY 
-  win_matches DESC;`, (err, result) => {
+  win_percentage DESC;`, (err, result) => {
     if (err) {
       console.error(err);
     }
