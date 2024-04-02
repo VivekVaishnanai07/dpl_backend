@@ -30,7 +30,7 @@ router.get("/:id", verifyRoleOrToken(['admin', 'user']), (req, res) => {
 // creating new teams
 router.post('/add-team', verifyRoleOrToken(['admin']), (req, res) => {
   const updateData = req.body;
-  db.query(`INSERT INTO teams (full_name,short_name,icon) VALUES ('${updateData.full_name}','${updateData.short_name}','${updateData.icon}')`, (err, result) => {
+  db.query(`INSERT INTO teams (full_name,short_name,icon,team_color) VALUES ('${updateData.full_name}','${updateData.short_name}','${updateData.icon}', '${updateData.team_color}')`, (err, result) => {
     if (err) {
       console.error(err)
     }
@@ -61,7 +61,7 @@ router.put('/:id', verifyRoleOrToken(['admin']), (req, res) => {
     }
 
     // If the team is not associated with any match, execute the update query
-    const sql = `UPDATE teams SET full_name = '${updateData.full_name}', short_name = '${updateData.short_name}', icon = '${updateData.icon}' WHERE id = ${id}`;
+    const sql = `UPDATE teams SET full_name = '${updateData.full_name}', short_name = '${updateData.short_name}', icon = '${updateData.icon}', team_color = '${updateData.team_color}' WHERE id = ${id}`;
 
     db.query(sql, (err, result) => {
       if (err) {
