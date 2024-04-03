@@ -56,7 +56,7 @@ LEFT JOIN
 GROUP BY
   u.id, u.first_name, u.last_name
 ORDER BY
-recent_matches.match_id;`, (err, result) => {
+  u.id;`, (err, result) => {
     if (err) {
       console.error(err)
     }
