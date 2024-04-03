@@ -55,24 +55,35 @@ router.put('/:id', verifyRoleOrToken(['admin']), (req, res) => {
 
     const matchCount = matchResult[0].matchCount;
 
-    // If the team is associated with any match, do not execute the update query
+    // If the team is associated with any match
     if (matchCount > 0) {
-      return res.status(400).json({ error: 'Team cannot be edited as it is associated with matches' });
+      // Update team color only
+      const sql = `UPDATE teams SET team_color = '${updateData.team_color}' WHERE id = ${id}`;
+
+      db.query(sql, (err, result) => {
+        if (err) {
+          console.error(err);
+          res.status(500).json({ error: 'Internal Server Error' });
+        } else {
+          res.status(200).json({ message: 'Only the team color has been updated. But the team cannot be edited because it is associated with matches' });
+        }
+      });
+    } else {
+      // If the team is not associated with any match, execute the full update query
+      const sql = `UPDATE teams SET full_name = '${updateData.full_name}', short_name = '${updateData.short_name}', icon = '${updateData.icon}', team_color = '${updateData.team_color}' WHERE id = ${id}`;
+
+      db.query(sql, (err, result) => {
+        if (err) {
+          console.error(err);
+          res.status(500).json({ error: 'Internal Server Error' });
+        } else {
+          res.status(200).json({ message: 'Team updated successfully' });
+        }
+      });
     }
-
-    // If the team is not associated with any match, execute the update query
-    const sql = `UPDATE teams SET full_name = '${updateData.full_name}', short_name = '${updateData.short_name}', icon = '${updateData.icon}', team_color = '${updateData.team_color}' WHERE id = ${id}`;
-
-    db.query(sql, (err, result) => {
-      if (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Internal Server Error' });
-      } else {
-        res.status(200).json({ message: 'Team updated successfully' });
-      }
-    });
   });
 });
+
 
 
 // delete a team

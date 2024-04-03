@@ -80,7 +80,8 @@ router.get("/dashboard/:id", verifyRoleOrToken(['admin', 'user']), (req, res) =>
     TIME_FORMAT(TIMEDIFF(m.date, CURRENT_TIMESTAMP), \
       '%H:%i'), \
     CONCAT(DATEDIFF(m.date, CURRENT_DATE))) AS countdownDateTime, \
-  pt.short_name AS predicted_team \
+  pt.short_name AS predicted_team, \
+  pt.team_color AS predicted_team_color \
 FROM \
   matches m \
       LEFT JOIN \
@@ -123,6 +124,7 @@ FROM \
       winner_team: item.winner_team,
       countdownTime: item.countdownDateTime,
       predicted_team: item.predicted_team,
+      predicted_team_color: item.predicted_team_color,
       match_status: item.match_status
     }));
 
