@@ -23,7 +23,6 @@ router.put('/:teamId/:predictionId/:matchId', (req, res) => {
   const matchId = req.params.matchId;
   db.query(`select CAST(date as DATETIME) > now() as canUpdate from matches where id=${matchId};`, (err, result) => {
     if (result[0].canUpdate === 1) {
-      console.log(req.params)
       db.query(`UPDATE prediction SET team_id=${teamId} WHERE id=${predictionId}`, (err, result) => {
         if (err) {
           console.error(err)

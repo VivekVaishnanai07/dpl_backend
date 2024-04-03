@@ -12,7 +12,7 @@ const verifyRoleOrToken = (requiredRoles) => {
 
     jwt.verify(token, process.env.JWT_SECRET_KEY, (err, decoded) => {
       if (err) {
-        console.log(err)
+        console.error(err)
         if (err.name === 'TokenExpiredError') {
           return res.status(401).json({ message: 'Invalid token' });
         } else {
