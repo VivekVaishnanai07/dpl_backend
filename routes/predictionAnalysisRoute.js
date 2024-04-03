@@ -31,11 +31,12 @@ LEFT JOIN (
       m.id AS match_id,
       m.match_no,
       m.venue,
-      m.date
+      m.date,
+      m.winner_team
   FROM
       matches m
   WHERE
-      m.date <= CURDATE()
+      m.winner_team IS NOT NULL
   ORDER BY
       m.date DESC
   LIMIT 5
