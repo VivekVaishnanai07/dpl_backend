@@ -8,6 +8,7 @@ router.get('/', (req, res) => {
     db.query(`SELECT
   u.id AS user_id, 
   CONCAT(u.first_name, ' ', u.last_name) AS full_name,
+  u.userImg AS userImg,
   COUNT(DISTINCT m.id) AS total_matches,
   COUNT(DISTINCT p.match_id) AS predicted_matches,
   SUM(CASE WHEN p.team_id = m.winner_team THEN 1 ELSE 0 END) AS win_matches,

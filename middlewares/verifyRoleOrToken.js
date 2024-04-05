@@ -14,9 +14,9 @@ const verifyRoleOrToken = (requiredRoles) => {
       if (err) {
         console.error(err)
         if (err.name === 'TokenExpiredError') {
-          return res.status(401).json({ message: 'Invalid token' });
-        } else {
           return res.status(401).json({ message: 'Token expired' });
+        } else {
+          return res.status(401).json({ message: 'Invalid token' });
         }
       }
 
