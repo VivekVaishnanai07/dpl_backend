@@ -17,7 +17,7 @@ router.get("/", verifyRoleOrToken(['admin']), (req, res) => {
 });
 
 // Get one user by id
-router.get("/:id", verifyRoleOrToken(['admin']), (req, res) => {
+router.get("/:id", verifyRoleOrToken(['admin', 'user']), (req, res) => {
   const id = req.params.id;
   db.query("SELECT id, email, first_name, last_name, role, userImg FROM users WHERE id = ?", id, (err, result) => {
     if (err) {
@@ -25,7 +25,7 @@ router.get("/:id", verifyRoleOrToken(['admin']), (req, res) => {
       res.status(500).send("Internal Server Error");
       return;
     }
-    res.send(result[0]);
+    res.send(result);
   });
 });
 
