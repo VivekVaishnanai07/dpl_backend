@@ -25,7 +25,7 @@ router.get("/:id", verifyRoleOrToken(['admin', 'user']), (req, res) => {
       res.status(500).send("Internal Server Error");
       return;
     }
-    res.send(result);
+    res.send(result[0]);
   });
 });
 
