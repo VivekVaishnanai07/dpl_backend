@@ -5,8 +5,6 @@ const db = require('./config/db.config');
 const jwt = require('jsonwebtoken');
 const verifyRoleOrToken = require('./middlewares/verifyRoleOrToken');
 const bodyParser = require('body-parser');
-const crypto = require('crypto');
-const cookieParser = require('cookie-parser');
 
 const userRoutes = require('./routes/userRoutes');
 const teamRoutes = require('./routes/teamRoutes');
@@ -22,9 +20,6 @@ const PORT = process.env.PORT || 3300;
 app.use(cors());
 app.use(bodyParser.json({ limit: '5mb' }));
 app.use(bodyParser.urlencoded({ limit: '5mb', extended: true }));
-app.use(cookieParser());
-
-const activeSessions = {};
 
 // Apply token verification middleware to protected routes
 app.use("/api/user", userRoutes);
@@ -39,9 +34,6 @@ app.post("/api/login", (req, res) => {
   const loginData = req.body;
   db.query(`SELECT id, first_name as firstName, last_name as lastName, role FROM users WHERE email = '${loginData.email}' AND password = '${loginData.password}';`, (err, result) => {
     const userData = result[0];
-    if (activeSessions[userData.id]) {
-      return res.status(403).json({ message: 'User already logged in' });
-    }
     if (userData) {
       let data = {
         "id": userData.id,
@@ -49,12 +41,8 @@ app.post("/api/login", (req, res) => {
         "lastName": userData.lastName,
         "role": userData.role,
       }
-      const sessionID = crypto.randomBytes(20).toString('hex');
       const token = jwt.sign(data, process.env.JWT_SECRET_KEY, { expiresIn: 1800 });
-      activeSessions[userData.id] = sessionID; // Store the session ID as active for this user
-      res.cookie('token', token, { httpOnly: true });
-      res.cookie('sessionID', sessionID, { httpOnly: true });
-      res.send({ token, sessionID });
+      res.json({ token });
     } else {
       res.send('Your Email and Password is incorrect')
     }
@@ -66,19 +54,6 @@ app.post("/api/login", (req, res) => {
     }
   });
 });
-
-// Logout
-app.post("/api/logout", (req, res) => {
-  const sessionID = req.body.sessionID;
-  const userId = req.body.userId; // Implement a function to extract user ID from token
-  if (activeSessions[userId] === sessionID) {
-    delete activeSessions[userId];
-  }
-  res.clearCookie('token');
-  res.clearCookie('sessionID');
-  res.json({ message: 'Logged out successfully' });
-});
-
 
 // Change password
 app.post("/api/change-password", verifyRoleOrToken(['admin', 'user']), (req, res) => {
@@ -111,20 +86,6 @@ app.post("/api/change-password", verifyRoleOrToken(['admin', 'user']), (req, res
     });
   });
 });
-
-app.use((req, res, next) => {
-  const sessionID = req.cookies.sessionID;
-  const token = req.cookies.token;
-  if (!sessionID || !token) {
-    return res.status(401).json({ message: 'Unauthorized' });
-  }
-  const userId = getUserIdFromToken(token); // Implement a function to extract user ID from token
-  if (activeSessions[userId] !== sessionID) {
-    return res.status(401).json({ message: 'Session expired or invalid' });
-  }
-  next();
-});
-
 
 app.listen(PORT, () => {
   console.log(`Server is running on ${PORT}`);
