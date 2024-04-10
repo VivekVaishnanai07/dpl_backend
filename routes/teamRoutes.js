@@ -6,7 +6,11 @@ const router = express.Router();
 
 // get teams list
 router.get("/", verifyRoleOrToken(['admin', 'user']), (req, res) => {
-  db.query("SELECT * FROM teams", (err, result) => {
+  db.query(`SELECT t.*, 
+    GROUP_CONCAT(tw.winner_year) AS winner_years
+    FROM teams t
+    LEFT JOIN team_winner_year tw ON t.id = tw.team_id
+    GROUP BY t.id;`, (err, result) => {
     if (err) {
       console.error(err)
     }
