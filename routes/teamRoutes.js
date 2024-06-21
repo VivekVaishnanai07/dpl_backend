@@ -5,11 +5,13 @@ const verifyRoleOrToken = require('../middlewares/verifyRoleOrToken');
 const router = express.Router();
 
 // get teams list
-router.get("/", verifyRoleOrToken(['admin', 'user']), (req, res) => {
+router.get("/tournament/:tournament_id", verifyRoleOrToken(['admin', 'user']), (req, res) => {
+  const id = req.params.tournament_id;
   db.query(`SELECT t.*, 
     GROUP_CONCAT(tw.winner_year) AS winner_years
     FROM teams t
     LEFT JOIN team_winner_year tw ON t.id = tw.team_id
+    where t.tournament_id = ${id}
     GROUP BY t.id;`, (err, result) => {
     if (err) {
       console.error(err)
@@ -34,7 +36,7 @@ router.get("/:id", verifyRoleOrToken(['admin', 'user']), (req, res) => {
 // creating new teams
 router.post('/add-team', verifyRoleOrToken(['admin']), (req, res) => {
   const updateData = req.body;
-  db.query(`INSERT INTO teams (full_name,short_name,icon,team_color) VALUES ('${updateData.full_name}','${updateData.short_name}','${updateData.icon}', '${updateData.team_color}')`, (err, result) => {
+  db.query(`INSERT INTO teams (full_name,short_name,icon,team_color,tournament_id) VALUES ('${updateData.full_name}','${updateData.short_name}','${updateData.icon}', '${updateData.team_color}', ${updateData.tournament_id})`, (err, result) => {
     if (err) {
       console.error(err)
     }
@@ -74,7 +76,7 @@ router.put('/:id', verifyRoleOrToken(['admin']), (req, res) => {
       });
     } else {
       // If the team is not associated with any match, execute the full update query
-      const sql = `UPDATE teams SET full_name = '${updateData.full_name}', short_name = '${updateData.short_name}', icon = '${updateData.icon}', team_color = '${updateData.team_color}' WHERE id = ${id}`;
+      const sql = `UPDATE teams SET full_name = '${updateData.full_name}', short_name = '${updateData.short_name}', icon = '${updateData.icon}', team_color = '${updateData.team_color}', tournament_id = ${updateData.tournament_id} WHERE id = ${id}`;
 
       db.query(sql, (err, result) => {
         if (err) {
