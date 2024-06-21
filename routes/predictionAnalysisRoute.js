@@ -80,9 +80,10 @@ router.get('/filter/:tournamentId/:groupId', (req, res) => {
 })
 
 // particular user prediction team list get
-router.get('/:userId/:groupId', (req, res) => {
+router.get('/:userId/:groupId/:tournamentId', (req, res) => {
   const userId = req.params.userId;
   const groupId = req.params.groupId;
+  const tournamentId = req.params.tournamentId;
   db.query(`SELECT 
      p.id,
      m.match_no,
@@ -117,8 +118,7 @@ router.get('/:userId/:groupId', (req, res) => {
      LEFT JOIN
        teams t3 ON t3.id = m.winner_team
      WHERE
-       gu.group_id = ${groupId}
-       AND gu.user_id = ${userId}
+       p.group_id = ${groupId} AND p.user_id = ${userId} AND p.tournament_id = ${tournamentId}
      ORDER BY 
        m.match_no ASC;`, (err, result) => {
     if (err) {

@@ -4,6 +4,23 @@ const verifyRoleOrToken = require('../middlewares/verifyRoleOrToken');
 
 const router = express.Router();
 
+// find groups from the tournaments
+router.get("/dashboard-groups/:userId/:tournamentId", verifyRoleOrToken(['admin', 'user']), (req, res) => {
+  const userId = req.params.userId;
+  const tournamentId = req.params.tournamentId;
+  db.query(`SELECT DISTINCT gd.* 
+     FROM group_details gd 
+     INNER JOIN groups_tournaments gt ON gd.id = gt.group_id 
+     LEFT JOIN groups_users gu ON gt.group_id = gu.group_id 
+     WHERE gt.tournament_id = ${tournamentId} And (gu.user_id = ${userId} OR ${userId} IS NULL);`, (err, result) => {
+    if (err) {
+      console.error(err)
+    }
+    res.send(result)
+  }
+  );
+});
+
 // get group_details list
 router.get("/user-groups/:id", verifyRoleOrToken(['admin', 'user']), (req, res) => {
   const id = req.params.id;

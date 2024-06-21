@@ -28,7 +28,7 @@ app.use(bodyParser.urlencoded({ limit: '5mb', extended: true }));
 
 const io = socketIo(server, {
   cors: {
-    origin: 'http://localhost:3000'
+    origin: 'https://dpl11.vercel.app'
   }
 })
 
