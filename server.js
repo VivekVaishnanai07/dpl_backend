@@ -28,7 +28,7 @@ app.use(bodyParser.urlencoded({ limit: '5mb', extended: true }));
 
 const io = socketIo(server, {
   cors: {
-    origin: 'http://localhost:3300'
+    origin: 'https://dpl11.vercel.app'
   }
 })
 
@@ -44,7 +44,7 @@ app.use("/api/group", groupRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/team", teamRoutes);
 app.use("/api/match", matchRoutes);
-app.use("/api/prediction", verifyRoleOrToken(['admin', 'user']), predictionRoutes(io));
+app.use("/api/prediction", verifyRoleOrToken(['admin', 'user']), predictionRoutes);
 app.use("/api/prediction-analysis", verifyRoleOrToken(['admin', 'user']), predictionAnalysisRoute);
 app.use("/api/player-leaderboard", verifyRoleOrToken(['admin', 'user']), playerLeaderboardRoute);
 
