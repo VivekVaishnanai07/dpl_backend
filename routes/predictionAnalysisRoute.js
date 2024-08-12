@@ -4,9 +4,9 @@ const db = require('../config/db.config');
 const router = express.Router();
 
 router.get('/filter/:tournamentId/:groupId', (req, res) => {
-  const tournament_id = req.params.tournamentId;
-  const group_id = req.params.groupId;
-  db.query(`SELECT 
+    const tournament_id = req.params.tournamentId;
+    const group_id = req.params.groupId;
+    db.query(`SELECT 
       u.id AS user_id,
       CONCAT(u.first_name, ' ', u.last_name) AS full_name,
       gt.group_id AS group_id,
@@ -72,61 +72,76 @@ router.get('/filter/:tournamentId/:groupId', (req, res) => {
       u.id, u.first_name, u.last_name, gt.group_id, gt.tournament_id
     ORDER BY
       u.id;`, (err, result) => {
-    if (err) {
-      console.error(err)
-    }
-    res.send(result)
-  });
+        if (err) {
+            console.error(err)
+        }
+        res.send(result)
+    });
 })
 
 // particular user prediction team list get
 router.get('/:userId/:groupId/:tournamentId', (req, res) => {
-  const userId = req.params.userId;
-  const groupId = req.params.groupId;
-  const tournamentId = req.params.tournamentId;
-  db.query(`SELECT 
-     p.id,
-     m.match_no,
-     t1.short_name AS team_1,
-     t2.short_name AS team_2,
-     m.venue,
-     m.date,
-     t_pred.short_name AS predict_team,
-     t3.short_name AS winner_team,
-     CASE
-         WHEN t3.id = p.team_id AND p.team_id IS NOT NULL THEN 'true'
-         ELSE 'false'
-     END AS status
-       FROM
-      groups_users gu
-     INNER JOIN
-       groups_tournaments gt ON gu.group_id = gt.group_id
-     INNER JOIN
-       tournaments tournament ON gt.tournament_id = tournament.id
-     INNER JOIN
-       matches m ON tournament.id = m.tournament_id
-     LEFT JOIN
-       prediction p ON m.id = p.match_id AND gu.user_id = p.user_id AND gu.group_id = p.group_id
-     LEFT JOIN
-       group_details g ON gu.group_id = g.id
-     LEFT JOIN
-       teams t1 ON t1.id = m.team_1
-     LEFT JOIN
-       teams t2 ON t2.id = m.team_2
-     LEFT JOIN
-       teams t_pred ON t_pred.id = p.team_id
-     LEFT JOIN
-       teams t3 ON t3.id = m.winner_team
-     WHERE
-       p.group_id = ${groupId} AND p.user_id = ${userId} AND p.tournament_id = ${tournamentId}
-     ORDER BY 
-       m.match_no ASC;`, (err, result) => {
-    if (err) {
-      console.error(err)
+    const userId = req.params.userId;
+    const groupId = req.params.groupId;
+    const tournamentId = req.params.tournamentId;
+    db.query(`WITH RankedMatches AS (
+    SELECT 
+        p.id AS prediction_id,
+        m.match_no,
+        t1.short_name AS team_1,
+        t2.short_name AS team_2,
+        m.venue,
+        m.date,
+        t_pred.short_name AS predicted_team,
+        t3.short_name AS winner_team,
+        CASE
+            WHEN t3.id = p.team_id AND p.team_id IS NOT NULL THEN 'true'
+            ELSE 'false'
+        END AS status,
+        ROW_NUMBER() OVER (PARTITION BY m.id ORDER BY m.match_no) AS rn
+    FROM
+        groups_users gu
+    INNER JOIN
+        groups_tournaments gt ON gu.group_id = gt.group_id
+    INNER JOIN
+        tournaments tournament ON gt.tournament_id = tournament.id
+    INNER JOIN
+        matches m ON tournament.id = m.tournament_id
+    LEFT JOIN
+        prediction p ON m.id = p.match_id AND gu.user_id = p.user_id AND gu.group_id = p.group_id
+    LEFT JOIN
+        teams t1 ON t1.id = m.team_1
+    LEFT JOIN
+        teams t2 ON t2.id = m.team_2
+    LEFT JOIN
+        teams t_pred ON t_pred.id = p.team_id
+    LEFT JOIN
+        teams t3 ON t3.id = m.winner_team
+    WHERE
+        gu.user_id = ${userId} AND gt.tournament_id = ${tournamentId} AND gu.group_id = ${groupId}
+    )
+    SELECT
+        prediction_id,
+        match_no,
+        team_1,
+        team_2,
+        venue,
+        date,
+        predicted_team,
+        winner_team,
+        status
+    FROM
+        RankedMatches
+    WHERE
+        rn = 1
+    ORDER BY 
+        match_no ASC;`, (err, result) => {
+        if (err) {
+            console.error(err)
+        }
+        res.send(result)
     }
-    res.send(result)
-  }
-  );
+    );
 })
 
 

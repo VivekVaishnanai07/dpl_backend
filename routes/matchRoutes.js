@@ -66,9 +66,9 @@ router.get("/tournament/:tournament_id", verifyRoleOrToken(['admin', 'user']), (
 });
 
 // dashboard matches list
-router.get("/dashboard/:userId/:tournamentId", verifyRoleOrToken(['admin', 'user']), (req, res) => {
+router.get("/dashboard/:userId", verifyRoleOrToken(['admin', 'user']), (req, res) => {
   const id = req.params.userId;
-  const tournament_id = req.params.tournamentId;
+  // const tournament_id = req.params.tournamentId;
   db.query(`SELECT 
       m.id, 
       team_1.id AS team_1_id, 
@@ -97,34 +97,26 @@ router.get("/dashboard/:userId/:tournamentId", verifyRoleOrToken(['admin', 'user
       MAX(pt.short_name) AS predicted_team, 
       MAX(pt.team_color) AS predicted_team_color 
     FROM 
-      matches m 
-    LEFT JOIN 
-      groups_tournaments gt ON m.tournament_id = gt.id
-    LEFT JOIN 
-      prediction p ON m.id = p.match_id AND p.group_id = gt.group_id AND p.user_id = ${id}
-    LEFT JOIN 
-      teams team_1 ON team_1.id = m.team_1 
-    LEFT JOIN 
-      teams team_2 ON team_2.id = m.team_2 
-    LEFT JOIN 
-      teams team_3 ON team_3.id = m.winner_team 
-    LEFT JOIN 
-      teams pt ON p.team_id = pt.id 
-    WHERE 
-      m.date > NOW()  
-      AND m.tournament_id = ${tournament_id} 
-    GROUP BY 
-      m.id, 
-      team_1.id, 
-      team_2.id, 
-      m.venue, 
-      m.match_price, 
-      m.date, 
-      m.match_no, 
-      m.season_year, 
-      team_3.full_name
-    ORDER BY 
-      ABS(TIMESTAMPDIFF(SECOND, m.date, CURRENT_TIMESTAMP)) ASC 
+      matches m
+        LEFT JOIN
+    teams team_1 ON team_1.id = m.team_1
+        LEFT JOIN
+    teams team_2 ON team_2.id = m.team_2
+        LEFT JOIN
+    teams team_3 ON team_3.id = m.winner_team
+        LEFT JOIN
+    prediction p ON m.id = p.match_id AND p.user_id = ${id}
+        LEFT JOIN
+    teams pt ON p.team_id = pt.id
+        INNER JOIN
+    groups_tournaments gt ON m.tournament_id = gt.tournament_id
+        INNER JOIN
+    groups_users gu ON gt.group_id = gu.group_id
+        AND gu.user_id = ${id} 
+    WHERE
+     m.date > NOW()
+    GROUP BY m.id , team_1.id , team_2.id , m.venue , m.match_price , m.date , m.match_no , m.season_year , team_3.full_name
+    ORDER BY ABS(TIMESTAMPDIFF(SECOND,m.date,CURRENT_TIMESTAMP)) ASC
     LIMIT 5;`, (err, result) => {
     if (err) {
       console.error(err);
@@ -230,7 +222,6 @@ router.put('/:id', verifyRoleOrToken(['admin']), (req, res) => {
   });
 });
 
-
 // Add winner team
 router.put('/winner-team/:id/:teamId', verifyRoleOrToken(['admin']), (req, res) => {
   const id = req.params.id;
@@ -261,8 +252,6 @@ router.put('/winner-team/:id/:teamId', verifyRoleOrToken(['admin']), (req, res) 
     }
   });
 });
-
-
 
 // delete a match
 router.delete('/:id', verifyRoleOrToken(['admin']), (req, res) => {

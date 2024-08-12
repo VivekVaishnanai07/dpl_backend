@@ -7,11 +7,31 @@ const router = express.Router();
 // get tournaments list
 router.get("/user-tournaments/:id", verifyRoleOrToken(['admin', 'user']), (req, res) => {
   const id = req.params.id;
-  db.query(`SELECT DISTINCT t.* 
-       FROM tournaments t 
-       INNER JOIN groups_tournaments gt ON t.id = gt.tournament_id 
-       LEFT JOIN groups_users gu ON gt.group_id = gu.group_id 
-       WHERE gu.user_id = ${id} OR ${id} IS NULL;
+  db.query(`SELECT 
+       t.id,
+       t.name,
+       t.year,
+       t.start_date,
+       t.end_date,
+       t.status,
+       t.tournamentIcon,
+       JSON_ARRAYAGG(JSON_OBJECT(
+           'id', gd.id, 
+           'name', gd.name,
+           'description', gd.description
+       )) AS group_details
+   FROM
+       tournaments t
+           INNER JOIN
+       groups_tournaments gt ON t.id = gt.tournament_id
+           LEFT JOIN
+       groups_users gu ON gt.group_id = gu.group_id
+           LEFT JOIN
+       group_details gd ON gt.group_id = gd.id
+   WHERE
+       gu.user_id = ${id} OR ${id} IS NULL
+   GROUP BY
+       t.id, t.name, t.year, t.start_date, t.end_date, t.status, t.tournamentIcon;
   `, (err, result) => {
     if (err) {
       console.error(err);
