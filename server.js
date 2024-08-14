@@ -103,6 +103,100 @@ app.post("/api/login", (req, res) => {
   });
 });
 
+// Registration
+app.post('/api/register', (req, res) => {
+  const {
+    firstName, lastName, email, password,
+    groupName, groupDescription,
+    tournamentName, year, startDate, endDate, tournamentStatus
+  } = req.body;
+
+  try {
+    // Check if user already exists
+    db.query(`SELECT id FROM users WHERE email = '${email}';`, (err, result) => {
+      if (err) {
+        console.error(err);
+        res.status(500).send("Internal Server Error");
+        return;
+      }
+
+      if (result.length > 0) {
+        // User already exists
+        res.status(400).send("User already exists with this email");
+        return;
+      }
+
+      // Insert new user
+      db.query(
+        `INSERT INTO users (first_name, last_name, email, password, role) VALUES ('${firstName}', '${lastName}', '${email}', '${password}', 'admin');`,
+        (userErr, userResult) => {
+          if (userErr) {
+            console.error('Error creating user:', userErr);
+            return res.status(500).send({ error: 'Failed to create user' });
+          }
+
+          const userId = userResult.insertId;
+
+          // Insert new group
+          db.query(
+            `INSERT INTO group_details (name, description) VALUES ('${groupName}', '${groupDescription}');`,
+            (groupErr, groupResult) => {
+              if (groupErr) {
+                console.error('Error inserting group details:', groupErr);
+                return res.status(500).send({ error: 'Failed to create group' });
+              }
+
+              const groupId = groupResult.insertId;
+
+              // Link user to group
+              db.query(
+                `INSERT INTO groups_users (user_id, group_id) VALUES (${userId}, ${groupId});`,
+                (groupUserErr) => {
+                  if (groupUserErr) {
+                    console.error('Error inserting users:', groupUserErr);
+                    return res.status(500).send({ error: 'Failed to associate users with the group' });
+                  }
+
+                  // Insert new tournament
+                  db.query(
+                    `INSERT INTO tournaments (name, year, start_date, end_date, status) VALUES ('${tournamentName}', ${year}, '${startDate}', '${endDate}', '${tournamentStatus}');`,
+                    (tournamentErr, tournamentResult) => {
+                      if (tournamentErr) {
+                        console.error('Error inserting tournament details:', tournamentErr);
+                        return res.status(500).send({ error: 'Failed to create tournament' });
+                      }
+
+                      const tournamentId = tournamentResult.insertId;
+
+                      // Link group to tournament
+                      db.query(
+                        `INSERT INTO groups_tournaments (tournament_id, group_id) VALUES (${tournamentId}, ${groupId});`,
+                        (groupTournamentErr) => {
+                          if (groupTournamentErr) {
+                            console.error('Error associating groups with tournament:', groupTournamentErr);
+                            return res.status(500).send({ error: 'Failed to associate groups with tournament' });
+                          }
+
+                          // If everything is successful, send a success message to the admin
+                          res.status(200).send("Registration successful. User, group, and tournament created.");
+                        }
+                      );
+                    }
+                  );
+                }
+              );
+            }
+          );
+        }
+      );
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+
 // Change password
 app.post("/api/change-password", verifyRoleOrToken(['admin', 'user']), (req, res) => {
   const { userId, oldPassword, newPassword, confirmPassword } = req.body;

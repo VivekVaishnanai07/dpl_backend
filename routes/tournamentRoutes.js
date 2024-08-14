@@ -5,6 +5,42 @@ const verifyRoleOrToken = require('../middlewares/verifyRoleOrToken');
 const router = express.Router();
 
 // get tournaments list
+router.get("/get-tournaments/:id", verifyRoleOrToken(['admin', 'user']), (req, res) => {
+  const id = req.params.id;
+  db.query(`SELECT 
+    t.id,
+    t.name,
+    t.year,
+    t.start_date,
+    t.end_date,
+    t.status,
+    t.tournamentIcon
+  FROM
+      tournaments t
+      INNER JOIN groups_tournaments gt ON t.id = gt.tournament_id
+      LEFT JOIN groups_users gu ON gt.group_id = gu.group_id
+      LEFT JOIN group_details gd ON gt.group_id = gd.id
+  WHERE
+      gu.user_id = ${id} OR ${id} IS NULL
+  GROUP BY
+      t.id, t.name, t.year, t.start_date, t.end_date, t.status;`, (err, result) => {
+    if (err) {
+      console.error(err);
+      res.status(500).send("Internal Server Error");
+      return;
+    }
+
+    if (result.length === 0) {
+      // If the result array is empty, user doesn't have any tournaments
+      res.status(404).send("User has no tournaments.");
+    } else {
+      // User has tournaments, send the result
+      res.send(result);
+    }
+  });
+});
+
+// get tournaments list
 router.get("/user-tournaments/:id", verifyRoleOrToken(['admin', 'user']), (req, res) => {
   const id = req.params.id;
   db.query(`SELECT 
@@ -14,7 +50,6 @@ router.get("/user-tournaments/:id", verifyRoleOrToken(['admin', 'user']), (req, 
        t.start_date,
        t.end_date,
        t.status,
-       t.tournamentIcon,
        JSON_ARRAYAGG(JSON_OBJECT(
            'id', gd.id, 
            'name', gd.name,
@@ -31,7 +66,7 @@ router.get("/user-tournaments/:id", verifyRoleOrToken(['admin', 'user']), (req, 
    WHERE
        gu.user_id = ${id} OR ${id} IS NULL
    GROUP BY
-       t.id, t.name, t.year, t.start_date, t.end_date, t.status, t.tournamentIcon;
+       t.id, t.name, t.year, t.start_date, t.end_date, t.status;
   `, (err, result) => {
     if (err) {
       console.error(err);
